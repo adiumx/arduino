@@ -61,6 +61,18 @@ stateDiagram-v2
 
 Es decir, cada segundo adicional de encendido incrementa la humedad relativa en aproximadamente 0.22%, con un pequeño offset inicial negativo que refleja la variabilidad del sensor en tiempos muy cortos.
 
+## Cómo se usa el modelo en operación
+
+En producción, el modelo se usa "al revés": en vez de partir del tiempo para predecir el cambio de humedad, se parte del cambio de humedad **deseado** y se despeja el tiempo necesario, invirtiendo la fórmula de la regresión:
+deltaDeseado = humedadObjetivo - humedadActual
+tiempo_on_s = (deltaDeseado - c) / k
+
+**Ejemplo real:** si la humedad actual es 63% y el objetivo es 65% (`deltaDeseado = 2%`), el sistema calcula que necesita encender el humidificador durante **~16.9 segundos**:
+
+![Ejemplo de predicción](https://raw.githubusercontent.com/adiumx/arduino/master/Humidificador/prediccion_ejemplo.png)
+
+La estrella verde marca el punto exacto: se traza horizontalmente desde el cambio deseado (2%) hasta la recta del modelo, y desde ahí se baja verticalmente para leer el tiempo correspondiente en el eje X.
+
 ## Regresión lineal vs. controlador PI
 
 También implementé un controlador PI (`pi_hum.ino`) como punto de comparación, siguiendo el enfoque clásico de teoría de control. En la práctica, el modelo de regresión lineal tuvo mejor desempeño: es un modelo con menos parámetros que ajustar (solo `k` y `c`, calculados directamente de los datos observados) frente a un PI que requiere sintonizar `Kp` y `Ki` manualmente — algo en lo que todavía no tengo suficiente experiencia en teoría de control para lograr un ajuste fino.
